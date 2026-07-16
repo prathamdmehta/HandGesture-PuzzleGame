@@ -132,6 +132,11 @@
   .stats{display:flex;gap:8px;font-size:11px;color:#666;}
   .stats span{border:1px solid var(--line);padding:4px 8px;border-radius:12px;background:#fff;}
 
+  .progress-wrap{width:min(360px,100%);display:flex;flex-direction:column;gap:8px;}
+  .progress-meta{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#555;}
+  .progress-bar{width:100%;height:10px;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:#fff;}
+  .progress-fill{height:100%;width:0%;background:var(--accent);border-radius:999px;transition:width .2s ease;}
+
   .footer-note{font-size:11px;color:#888;max-width:360px;}
   .hint{font-size:13px;color:#666;max-width:340px;}
 </style>
@@ -175,6 +180,15 @@
       <video id="trackVideo" autoplay playsinline muted></video>
       <canvas id="overlay" width="320" height="320"></canvas>
       <div id="cursorDot"></div>
+    </div>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-meta">
+      <span id="progressLabel">Progress: 0/9 tiles correct</span>
+      <span id="progressPercent">0%</span>
+    </div>
+    <div class="progress-bar" aria-label="Puzzle progress">
+      <div id="progressFill" class="progress-fill"></div>
     </div>
   </div>
   <div class="stats">
@@ -248,6 +262,18 @@ document.getElementById('snapBtn').addEventListener('click', ()=>{
 const GRID = 3, TILE = 90;
 let order = [], solvedOrder = [];
 let dragTile = null; // index of tile currently held (mouse or pinch)
+const progressFill = document.getElementById('progressFill');
+const progressLabel = document.getElementById('progressLabel');
+const progressPercent = document.getElementById('progressPercent');
+
+function updateProgress(){
+  const totalTiles = GRID * GRID;
+  const correctTiles = order.reduce((count, value, index) => count + (value === solvedOrder[index] ? 1 : 0), 0);
+  const percent = Math.round((correctTiles / totalTiles) * 100);
+  progressFill.style.width = percent + '%';
+  progressLabel.textContent = `Progress: ${correctTiles}/${totalTiles} tiles correct`;
+  progressPercent.textContent = percent + '%';
+}
 
 function buildPuzzle(imgUrl){
   const grid = document.getElementById('grid');
@@ -270,6 +296,7 @@ function buildPuzzle(imgUrl){
     tile.addEventListener('pointerdown', ()=>{ dragTile = slot; });
   }
   renderTiles(imgUrl);
+  updateProgress();
 
   // fallback: plain mouse drag between tiles too
   document.getElementById('grid').addEventListener('pointerup', (e)=>{
@@ -295,6 +322,7 @@ function dropOnto(targetSlot){
   if(dragTile === null || dragTile === targetSlot) return;
   [order[dragTile], order[targetSlot]] = [order[targetSlot], order[dragTile]];
   renderTiles(capturedDataUrl);
+  updateProgress();
   const t = document.querySelectorAll('#grid .tile')[targetSlot];
   t.classList.add('solved-flash');
   setTimeout(()=>t.classList.remove('solved-flash'),300);
