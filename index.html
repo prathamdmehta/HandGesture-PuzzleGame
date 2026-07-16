@@ -75,9 +75,14 @@
   video{border-radius:8px;background:#000;}
   #camPreview{width:320px;height:320px;object-fit:cover;transform:scaleX(-1);border:2px solid var(--ink);}
 
-  .puzzle-wrap{
-    display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;justify-content:center;
-  }
+ .puzzle-wrap{
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: start;
+  justify-content: center;
+  gap: 24px;
+  width: 100%;
+}
   #grid{
     display:grid;
     grid-template-columns:repeat(3,90px);
