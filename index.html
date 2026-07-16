@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Verify With Webcam - Pinch Puzzle</title>
+<meta name="description" content="An interactive hand-gesture puzzle game that uses your camera only for in-browser hand tracking. No personal data is uploaded or stored.">
+<title>Hand Gesture Puzzle Game</title>
 <style>
   :root{
     --ink:#1a1a2e;
@@ -138,33 +139,26 @@
 </head>
 <body>
 
-<!-- STAGE 1: I'm not a robot -->
+<!-- STAGE 1: Intro -->
 <div class="stage active" id="stage1">
-  <div class="badge">🤖</div>
-  <h1>I'm not a robot</h1>
-  <p class="sub">Take a selfie · solve the pinch puzzle · prove it</p>
-  <label class="checkbox-row" for="robotCheck">
-    <input type="checkbox" id="robotCheck">
-    <span>I'm not a robot</span>
-  </label>
-  <button class="cta" id="toStage2" disabled>Continue</button>
+  <div class="badge">✋</div>
+  <h1>Hand Gesture Puzzle</h1>
+  <p class="sub">A playful browser game with hand tracking</p>
+  <p class="hint">This demo uses your camera only for in-browser hand tracking. No personal data is uploaded or stored.</p>
+  <button class="cta" id="toStage2">Start Playing</button>
 </div>
 
-<!-- STAGE 2: Take photo -->
+<!-- STAGE 2: Camera setup -->
 <div class="stage" id="stage2">
-  <h1>Take a photo</h1>
+  <h1>Camera ready</h1>
   <video id="camPreview" autoplay playsinline muted></video>
-  <label class="checkbox-row" for="humanCheck">
-    <input type="checkbox" id="humanCheck" checked disabled>
-    <span>I'm not a robot</span>
-  </label>
-  <button class="cta" id="snapBtn">📷 Take Photo</button>
-  <p class="hint">Make sure your face is centered</p>
+  <p class="hint">Allow camera access to track your hand and move the puzzle pieces.</p>
+  <button class="cta" id="snapBtn">🎮 Start Puzzle</button>
 </div>
 
 <!-- STAGE 3: Puzzle -->
 <div class="stage" id="stage3">
-  <p class="sub" id="solveBadge">⟳ Solve with Pinch</p>
+  <p class="sub" id="solveBadge">✋ Pinch to play</p>
   <h1>Reassemble the <span style="color:var(--accent)">Puzzle</span></h1>
   <p class="hint">Pinch a tile to grab it · move your hand · release to drop</p>
   <div class="puzzle-wrap">
@@ -181,20 +175,20 @@
     <span id="handStat">Hand Tracking: —</span>
     <span id="pinchStat">Pinch: idle</span>
   </div>
-  <p class="footer-note">Pinch to grab tiles. If your camera/hand isn't detected, click-and-drag tiles works too.</p>
+  <p class="footer-note">Pinch to grab tiles. If your camera or hand isn't detected, click-and-drag tiles works too.</p>
 </div>
 
 <!-- STAGE 4: Success -->
 <div class="stage" id="stage4">
   <div class="badge" style="border-color:var(--ok);color:var(--ok);">✓</div>
-  <h1 style="color:var(--accent)">You're Human!</h1>
-  <p class="hint">Puzzle solved with pinch gestures<br>Identity verified — not a robot</p>
+  <h1 style="color:var(--accent)">Puzzle complete!</h1>
+  <p class="hint">You solved the puzzle with hand gestures.</p>
   <div class="stats">
-    <span>✓ Verified</span>
+    <span>✓ Completed</span>
     <span>▦ 9 Tiles</span>
     <span>✋ Pinch Gestures</span>
   </div>
-  <button class="cta" id="retryBtn">↺ Try Again</button>
+  <button class="cta" id="retryBtn">↺ Play Again</button>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
@@ -207,9 +201,7 @@ function goTo(id){
 }
 
 /* ---------- stage 1 ---------- */
-const robotCheck = document.getElementById('robotCheck');
 const toStage2 = document.getElementById('toStage2');
-robotCheck.addEventListener('change', ()=>{ toStage2.disabled = !robotCheck.checked; });
 
 let camStream = null;
 async function startCamera(videoEl){
