@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Verify With Webcam - Pinch Puzzle</title>
+<style>
+  :root{
+    --ink:#1a1a2e;
+    --paper:#f6f4ef;
+    --accent:#4a5cff;
+    --accent-dim:#dfe2ff;
+    --ok:#1f9d55;
+    --line:#d8d4c8;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;}
+  body{
+    font-family:'Courier New',ui-monospace,monospace;
+    background:var(--paper);
+    color:var(--ink);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-height:600px;
+    overflow:hidden;
+  }
+  .stage{
+    display:none;
+    flex-direction:column;
+    align-items:center;
+    gap:18px;
+    text-align:center;
+    width:100%;
+    padding:30px 20px;
+  }
+  .stage.active{display:flex;}
+
+  .badge{
+    width:110px;height:110px;border-radius:50%;
+    border:3px solid var(--ink);
+    display:flex;align-items:center;justify-content:center;
+    font-size:44px;
+    background:#fff;
+  }
+  h1{font-size:26px;letter-spacing:.5px;margin:0;}
+  p.sub{margin:0;color:#555;font-size:13px;letter-spacing:.5px;text-transform:uppercase;}
+
+  button.cta{
+    font-family:inherit;
+    background:var(--ink);
+    color:var(--paper);
+    border:none;
+    padding:14px 26px;
+    font-size:14px;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    cursor:pointer;
+    border-radius:4px;
+    transition:transform .15s ease;
+  }
+  button.cta:hover{transform:translateY(-2px);}
+  button.cta:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+
+  .checkbox-row{
+    display:flex;align-items:center;gap:10px;
+    border:1px solid var(--line);
+    background:#fff;
+    padding:12px 20px;border-radius:6px;
+    cursor:pointer;
+    user-select:none;
+  }
+  .checkbox-row input{width:18px;height:18px;accent-color:var(--accent);}
+
+  video{border-radius:8px;background:#000;}
+  #camPreview{width:320px;height:320px;object-fit:cover;transform:scaleX(-1);border:2px solid var(--ink);}
+
+  .puzzle-wrap{
+    display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;justify-content:center;
+  }
+  #grid{
+    display:grid;
+    grid-template-columns:repeat(3,90px);
+    grid-template-rows:repeat(3,90px);
+    gap:2px;
+    background:var(--ink);
+    padding:2px;
+    border-radius:4px;
+    position:relative;
+  }
+  .tile{
+    width:90px;height:90px;
+    background-size:270px 270px;
+    background-repeat:no-repeat;
+    position:relative;
+  }
+  .tile.solved-flash{outline:3px solid var(--ok);}
+
+  #camStage{position:relative;width:320px;height:320px;}
+  #trackVideo{width:320px;height:320px;object-fit:cover;transform:scaleX(-1);border:2px solid var(--ink);border-radius:8px;}
+  #overlay{position:absolute;top:0;left:0;width:320px;height:320px;pointer-events:none;}
+
+  #cursorDot{
+    position:absolute;
+    width:16px;height:16px;
+    border-radius:50%;
+    background:rgba(74,92,255,.55);
+    border:2px solid var(--accent);
+    pointer-events:none;
+    transform:translate(-50%,-50%);
+    display:none;
+    z-index:5;
+  }
+  #cursorDot.pinching{background:rgba(31,157,85,.65);border-color:var(--ok);}
+
+  #gridCursor{
+    position:absolute;
+    width:20px;height:20px;
+    border-radius:50%;
+    background:rgba(74,92,255,.55);
+    border:2px solid var(--accent);
+    pointer-events:none;
+    transform:translate(-50%,-50%);
+    display:none;
+    z-index:5;
+    transition:left .04s linear, top .04s linear;
+  }
+  #gridCursor.pinching{background:rgba(31,157,85,.65);border-color:var(--ok);}
+
+  .tile.hovered{outline:2px dashed var(--accent);outline-offset:-2px;z-index:2;}
+  .tile.hovered.pinching{outline:2px solid var(--ok);}
+
+  .stats{display:flex;gap:8px;font-size:11px;color:#666;}
+  .stats span{border:1px solid var(--line);padding:4px 8px;border-radius:12px;background:#fff;}
+
+  .footer-note{font-size:11px;color:#888;max-width:360px;}
+  .hint{font-size:13px;color:#666;max-width:340px;}
+</style>
+</head>
+<body>
+
+<!-- STAGE 1: I'm not a robot -->
+<div class="stage active" id="stage1">
+  <div class="badge">🤖</div>
+  <h1>I'm not a robot</h1>
+  <p class="sub">Take a selfie · solve the pinch puzzle · prove it</p>
+  <label class="checkbox-row" for="robotCheck">
+    <input type="checkbox" id="robotCheck">
+    <span>I'm not a robot</span>
+  </label>
+  <button class="cta" id="toStage2" disabled>Continue</button>
+</div>
+
+<!-- STAGE 2: Take photo -->
+<div class="stage" id="stage2">
+  <h1>Take a photo</h1>
+  <video id="camPreview" autoplay playsinline muted></video>
+  <label class="checkbox-row" for="humanCheck">
+    <input type="checkbox" id="humanCheck" checked disabled>
+    <span>I'm not a robot</span>
+  </label>
+  <button class="cta" id="snapBtn">📷 Take Photo</button>
+  <p class="hint">Make sure your face is centered</p>
+</div>
+
+<!-- STAGE 3: Puzzle -->
+<div class="stage" id="stage3">
+  <p class="sub" id="solveBadge">⟳ Solve with Pinch</p>
+  <h1>Reassemble the <span style="color:var(--accent)">Puzzle</span></h1>
+  <p class="hint">Pinch a tile to grab it · move your hand · release to drop</p>
+  <div class="puzzle-wrap">
+    <div id="grid">
+      <div id="gridCursor"></div>
+    </div>
+    <div id="camStage">
+      <video id="trackVideo" autoplay playsinline muted></video>
+      <canvas id="overlay" width="320" height="320"></canvas>
+      <div id="cursorDot"></div>
+    </div>
+  </div>
+  <div class="stats">
+    <span id="handStat">Hand Tracking: —</span>
+    <span id="pinchStat">Pinch: idle</span>
+  </div>
+  <p class="footer-note">Pinch to grab tiles. If your camera/hand isn't detected, click-and-drag tiles works too.</p>
+</div>
+
+<!-- STAGE 4: Success -->
+<div class="stage" id="stage4">
+  <div class="badge" style="border-color:var(--ok);color:var(--ok);">✓</div>
+  <h1 style="color:var(--accent)">You're Human!</h1>
+  <p class="hint">Puzzle solved with pinch gestures<br>Identity verified — not a robot</p>
+  <div class="stats">
+    <span>✓ Verified</span>
+    <span>▦ 9 Tiles</span>
+    <span>✋ Pinch Gestures</span>
+  </div>
+  <button class="cta" id="retryBtn">↺ Try Again</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+<script>
+/* ---------- stage navigation ---------- */
+const stages = ['stage1','stage2','stage3','stage4'];
+function goTo(id){
+  stages.forEach(s=>document.getElementById(s).classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+/* ---------- stage 1 ---------- */
+const robotCheck = document.getElementById('robotCheck');
+const toStage2 = document.getElementById('toStage2');
+robotCheck.addEventListener('change', ()=>{ toStage2.disabled = !robotCheck.checked; });
+
+let camStream = null;
+async function startCamera(videoEl){
+  try{
+    camStream = await navigator.mediaDevices.getUserMedia({video:{width:320,height:320}, audio:false});
+    videoEl.srcObject = camStream;
+    return true;
+  }catch(e){
+    console.warn('camera error', e);
+    return false;
+  }
+}
+
+toStage2.addEventListener('click', async ()=>{
+  goTo('stage2');
+  await startCamera(document.getElementById('camPreview'));
+});
+
+/* ---------- stage 2: capture photo ---------- */
+let capturedDataUrl = null;
+document.getElementById('snapBtn').addEventListener('click', ()=>{
+  const v = document.getElementById('camPreview');
+  const c = document.createElement('canvas');
+  c.width = 270; c.height = 270;
+  const ctx = c.getContext('2d');
+  // mirror to match preview
+  ctx.translate(270,0); ctx.scale(-1,1);
+  ctx.drawImage(v, 0, 0, 270, 270);
+  capturedDataUrl = c.toDataURL('image/png');
+  buildPuzzle(capturedDataUrl);
+  goTo('stage3');
+  initHandTracking();
+});
+
+/* ---------- stage 3: puzzle ---------- */
+const GRID = 3, TILE = 90;
+let order = [], solvedOrder = [];
+let dragTile = null; // index of tile currently held (mouse or pinch)
+
+function buildPuzzle(imgUrl){
+  const grid = document.getElementById('grid');
+  grid.querySelectorAll('.tile').forEach(t=>t.remove());
+  solvedOrder = [...Array(GRID*GRID).keys()];
+  order = [...solvedOrder];
+  // shuffle, but avoid an already-solved shuffle
+  do {
+    for(let i=order.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [order[i],order[j]] = [order[j],order[i]];
+    }
+  } while(order.every((v,i)=>v===solvedOrder[i]));
+
+  for(let slot=0; slot<GRID*GRID; slot++){
+    const tile = document.createElement('div');
+    tile.className = 'tile';
+    tile.dataset.slot = slot;
+    grid.appendChild(tile);
+    tile.addEventListener('pointerdown', ()=>{ dragTile = slot; });
+  }
+  renderTiles(imgUrl);
+
+  // fallback: plain mouse drag between tiles too
+  document.getElementById('grid').addEventListener('pointerup', (e)=>{
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    if(el && el.classList.contains('tile') && dragTile !== null){
+      dropOnto(parseInt(el.dataset.slot));
+    }
+    dragTile = null;
+  });
+}
+
+function renderTiles(imgUrl){
+  const tiles = document.querySelectorAll('#grid .tile');
+  tiles.forEach((tile, slot)=>{
+    const pieceIndex = order[slot];
+    const row = Math.floor(pieceIndex/GRID), col = pieceIndex%GRID;
+    tile.style.backgroundImage = `url(${imgUrl})`;
+    tile.style.backgroundPosition = `-${col*TILE}px -${row*TILE}px`;
+  });
+}
+
+function dropOnto(targetSlot){
+  if(dragTile === null || dragTile === targetSlot) return;
+  [order[dragTile], order[targetSlot]] = [order[targetSlot], order[dragTile]];
+  renderTiles(capturedDataUrl);
+  const t = document.querySelectorAll('#grid .tile')[targetSlot];
+  t.classList.add('solved-flash');
+  setTimeout(()=>t.classList.remove('solved-flash'),300);
+  checkSolved();
+}
+
+function checkSolved(){
+  if(order.every((v,i)=>v===solvedOrder[i])){
+    setTimeout(()=>goTo('stage4'), 400);
+    if(camStream) camStream.getTracks().forEach(t=>t.stop());
+  }
+}
+
+/* ---------- hand tracking (MediaPipe Hands) ---------- */
+let handsInstance = null;
+let pinching = false;
+let pinchGrabbedSlot = null;
+
+async function initHandTracking(){
+  const videoEl = document.getElementById('trackVideo');
+  const overlay = document.getElementById('overlay');
+  const octx = overlay.getContext('2d');
+  const cursor = document.getElementById('cursorDot');
+  const handStat = document.getElementById('handStat');
+  const pinchStat = document.getElementById('pinchStat');
+
+  const ok = await startCamera(videoEl);
+  if(!ok){ handStat.textContent = 'Hand Tracking: camera unavailable'; return; }
+
+  if(typeof Hands === 'undefined'){
+    handStat.textContent = 'Hand Tracking: library failed to load — use click-drag instead';
+    return;
+  }
+
+  handsInstance = new Hands({locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}`});
+  handsInstance.setOptions({ maxNumHands:1, modelComplexity:1, minDetectionConfidence:0.6, minTrackingConfidence:0.6 });
+
+  handsInstance.onResults((results)=>{
+    octx.clearRect(0,0,320,320);
+    if(!results.multiHandLandmarks || results.multiHandLandmarks.length===0){
+      handStat.textContent = 'Hand Tracking: no hand';
+      cursor.style.display = 'none';
+      document.getElementById('gridCursor').style.display = 'none';
+      document.querySelectorAll('#grid .tile').forEach(t=>{t.classList.remove('hovered');t.classList.remove('pinching');});
+      return;
+    }
+    handStat.textContent = 'Hand Tracking: active';
+    const lm = results.multiHandLandmarks[0];
+    const thumb = lm[4], index = lm[8];
+
+    // mediapipe gives normalized coords already mirrored to match a selfie-view video (since we don't flip input)
+    const tx = (1-thumb.x)*320, ty = thumb.y*320;
+    const ix = (1-index.x)*320, iy = index.y*320;
+    const midx = (tx+ix)/2, midy = (ty+iy)/2;
+
+    // draw skeleton dots for thumb/index
+    octx.fillStyle = '#4a5cff';
+    [ [tx,ty], [ix,iy] ].forEach(([x,y])=>{
+      octx.beginPath(); octx.arc(x,y,5,0,Math.PI*2); octx.fill();
+    });
+    octx.strokeStyle = '#4a5cff';
+    octx.beginPath(); octx.moveTo(tx,ty); octx.lineTo(ix,iy); octx.stroke();
+
+    const dist = Math.hypot(tx-ix, ty-iy);
+    const nowPinching = dist < 32;
+
+    cursor.style.display = 'block';
+    cursor.style.left = midx+'px';
+    cursor.style.top = midy+'px';
+    cursor.classList.toggle('pinching', nowPinching);
+    pinchStat.textContent = 'Pinch: ' + (nowPinching ? 'grabbing' : 'idle');
+
+    // map camera-space (0-320) to grid-space (0-270) proportionally
+    const gridX = (midx/320)*(TILE*GRID);
+    const gridY = (midy/320)*(TILE*GRID);
+    const col = Math.min(GRID-1, Math.max(0, Math.floor(gridX/TILE)));
+    const row = Math.min(GRID-1, Math.max(0, Math.floor(gridY/TILE)));
+    const hoveredSlot = row*GRID+col;
+
+    // mirror the cursor onto the puzzle grid so the user can see which tile they're over
+    const gridCursor = document.getElementById('gridCursor');
+    gridCursor.style.display = 'block';
+    gridCursor.style.left = gridX+'px';
+    gridCursor.style.top = gridY+'px';
+    gridCursor.classList.toggle('pinching', nowPinching);
+
+    document.querySelectorAll('#grid .tile').forEach((t,i)=>{
+      t.classList.toggle('hovered', i===hoveredSlot);
+      t.classList.toggle('pinching', i===hoveredSlot && nowPinching);
+    });
+
+    if(nowPinching && !pinching){
+      pinching = true;
+      pinchGrabbedSlot = hoveredSlot;
+      dragTile = hoveredSlot;
+    } else if(!nowPinching && pinching){
+      pinching = false;
+      if(pinchGrabbedSlot !== null){
+        dragTile = pinchGrabbedSlot;
+        dropOnto(hoveredSlot);
+      }
+      pinchGrabbedSlot = null;
+    }
+  });
+
+  const camera = new Camera(videoEl, {
+    onFrame: async ()=>{ await handsInstance.send({image: videoEl}); },
+    width:320, height:320
+  });
+  camera.start();
+}
+
+/* ---------- retry ---------- */
+document.getElementById('retryBtn').addEventListener('click', ()=>{
+  location.reload();
+});
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+</body>
+</html>
