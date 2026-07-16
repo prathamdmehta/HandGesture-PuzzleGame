@@ -21,28 +21,29 @@
     display:flex;
     align-items:center;
     justify-content:center;
-    min-height:600px;
-    overflow:hidden;
+    min-height:500px;
+    overflow:auto;
+    padding:10px;
   }
   .stage{
     display:none;
     flex-direction:column;
     align-items:center;
-    gap:18px;
+    gap:10px;
     text-align:center;
-    width:100%;
-    padding:30px 20px;
+    width:min(100%, 520px);
+    padding:12px 10px 16px;
   }
   .stage.active{display:flex;}
 
   .badge{
-    width:110px;height:110px;border-radius:50%;
+    width:96px;height:96px;border-radius:50%;
     border:3px solid var(--ink);
     display:flex;align-items:center;justify-content:center;
     font-size:44px;
     background:#fff;
   }
-  h1{font-size:26px;letter-spacing:.5px;margin:0;}
+  h1{font-size:24px;letter-spacing:.5px;margin:0;}
   p.sub{margin:0;color:#555;font-size:13px;letter-spacing:.5px;text-transform:uppercase;}
 
   button.cta{
@@ -50,8 +51,8 @@
     background:var(--ink);
     color:var(--paper);
     border:none;
-    padding:14px 26px;
-    font-size:14px;
+    padding:12px 22px;
+    font-size:13px;
     letter-spacing:1px;
     text-transform:uppercase;
     cursor:pointer;
@@ -132,6 +133,20 @@
   .stats{display:flex;gap:8px;font-size:11px;color:#666;}
   .stats span{border:1px solid var(--line);padding:4px 8px;border-radius:12px;background:#fff;}
 
+.guide-card{width:min(560px,100%);border:2px solid var(--line);background:#fff; border-radius:14px; padding:16px; box-shadow:0 8px 24px rgba(0,0,0,.06);} 
+  .guide-hero{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;} 
+  .guide-character{font-size:54px;line-height:1;} 
+  .demo-panel{margin-top:8px;border:1px solid var(--line);border-radius:12px;padding:10px;background:linear-gradient(135deg,#fff,#f7f4ee);display:flex;justify-content:center;align-items:center;min-height:140px;}
+  .demo-board{width:220px;height:120px;border:2px solid var(--ink);border-radius:12px;position:relative;overflow:hidden;background:#fff;}
+  .demo-hand{position:absolute;left:18px;bottom:14px;font-size:38px;animation:demoMove 2.4s ease-in-out infinite;transform-origin:center bottom;}
+  .demo-hand::after{content:'';position:absolute;left:12px;top:10px;width:14px;height:14px;border-radius:50%;background:var(--accent);opacity:.9;animation:demoPinch 2.4s ease-in-out infinite;}
+  .demo-tile{position:absolute;width:44px;height:44px;border:2px solid var(--accent);background:var(--accent-dim);border-radius:8px;top:18px;left:24px;animation:demoTileA 2.4s ease-in-out infinite;}
+  .demo-tile.two{left:78px;top:20px;animation:demoTileSwap 2.4s ease-in-out infinite;}
+  .demo-tile.three{left:132px;top:20px;animation:none;}
+  @keyframes demoMove{0%,100%{transform:translateX(0) translateY(0)} 40%{transform:translateX(70px) translateY(-10px)} 70%{transform:translateX(82px) translateY(-2px)}}
+  @keyframes demoPinch{0%,100%{transform:scale(0.8);opacity:.7} 50%{transform:scale(1.2);opacity:1}}
+  @keyframes demoTileA{0%,100%{transform:translate(0,0)} 50%{transform:translate(54px,0)}}
+  @keyframes demoTileSwap{0%,100%{transform:translate(0,0)} 50%{transform:translate(-54px,0)}}
   .progress-wrap{width:min(360px,100%);display:flex;flex-direction:column;gap:8px;}
   .progress-meta{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#555;}
   .progress-bar{width:100%;height:10px;border:1px solid var(--line);border-radius:999px;overflow:hidden;background:#fff;}
@@ -148,6 +163,23 @@
   <div class="badge">🤖</div>
   <h1>I'm not a robot</h1>
   <p class="sub">Take a selfie · solve the pinch puzzle · prove it</p>
+  <div class="guide-card">
+    <div class="guide-hero">
+      <div class="guide-character">🧑‍🎤</div>
+      <div style="text-align:left;">
+        <h3 style="margin:0 0 6px; font-size:18px;">Meet your puzzle buddy</h3>
+        <p class="hint" style="margin:0;">Follow these simple steps and you’ll be solving in no time.</p>
+      </div>
+    </div>
+    <div class="demo-panel">
+      <div class="demo-board">
+        <div class="demo-hand">🤏</div>
+        <div class="demo-tile"></div>
+        <div class="demo-tile two swap-target"></div>
+        <div class="demo-tile three"></div>
+      </div>
+    </div>
+  </div>
   <label class="checkbox-row" for="robotCheck">
     <input type="checkbox" id="robotCheck">
     <span>I'm not a robot</span>
